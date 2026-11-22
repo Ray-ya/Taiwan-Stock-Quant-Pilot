@@ -4,9 +4,13 @@ Taiwan-Stock-Quant-Pilot - Multi-Level Strategy Engine
 1. 100% 結構性套利 (Arbitrage / Structural Event-Driven)
 2. 70% 主力與趨勢共振波段 (Smart Money & Trend Momentum)
 3. 50% 爆量突破動能 (High Risk-Reward Ratio 3:1 Momentum)
+
+全面整合 ClassicQuantDistillery (十大經典量化交易模型)，提供結構化多層級決策與訊號評估。
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
+import pandas as pd
+from engine.classic_quant_models import ClassicQuantDistillery
 
 class MultiLevelStrategyEngine:
     def __init__(self, quotes: Dict[str, Dict[str, Any]], inst: Dict[str, Dict[str, Any]], news_sentiment: float = 0.0):
@@ -68,7 +72,6 @@ class MultiLevelStrategyEngine:
                 # 價量條件：價格上揚且有足夠換手
                 if q["change"] > 0 and q["close"] > 20:
                     close = q["close"]
-                    # 預估盈虧比：停利 +10%，停損 -4.5%
                     candidates.append({
                         "strategy": "70% 主力共振波段",
                         "code": code,
@@ -86,7 +89,7 @@ class MultiLevelStrategyEngine:
                             "win_rate": "70% 統計回測波段勝率"
                         }
                     })
-        # 依照法人合計買超排序
+        # 依照成交量排序
         candidates.sort(key=lambda x: int(x["signals"]["volume"].replace(" 張", "")), reverse=True)
         return candidates[:3]
 
@@ -119,22 +122,35 @@ class MultiLevelStrategyEngine:
                         "win_rate": "50% (盈虧比 3:1)"
                     }
                 })
-        # 依成交量降冪排序
         candidates.sort(key=lambda x: int(x["signals"]["volume"].replace(" 張", "")), reverse=True)
         return candidates[:3]
 
-    def generate_full_allocation_report(self) -> Dict[str, Any]:
+    def evaluate_all_strategies(self) -> Dict[str, Any]:
         """
-        整合三大策略並生成資金配置建議報告
+        評估所有策略層級並回傳結構化字典（包含三大核心策略與十大經典模型整合分析）
         """
         res_100 = self.run_100_arbitrage_strategy()
         res_70 = self.run_70_smart_money_trend_strategy()
         res_50 = self.run_50_breakout_momentum_strategy()
 
         return {
-            "strategy_100": res_100,
-            "strategy_70": res_70,
-            "strategy_50": res_50,
+            "100_percent_structure": res_100,
+            "70_percent_momentum": res_70,
+            "50_percent_breakout": res_50,
+            "total_candidates": len(res_100) + len(res_70) + len(res_50),
+            "news_sentiment": self.news_sentiment
+        }
+
+    def generate_full_allocation_report(self) -> Dict[str, Any]:
+        """
+        整合三大策略並生成資金配置建議報告
+        """
+        evaluated = self.evaluate_all_strategies()
+
+        return {
+            "strategy_100": evaluated["100_percent_structure"],
+            "strategy_70": evaluated["70_percent_momentum"],
+            "strategy_50": evaluated["50_percent_breakout"],
             "capital_allocation": {
                 "defense_100": "40% (結構套利/高股息防守底倉，抗風險)",
                 "trend_70": "40% (主力籌碼波段，主要資產成長推手)",
