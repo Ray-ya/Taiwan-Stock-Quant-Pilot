@@ -1,2 +1,2 @@
 Set WshShell = CreateObject("WScript.Shell")
-WshShell.Run "python .\scheduler\daily_runner.py ON_BOOT", 0, False
+WshShell.Run """C:\Python314\pythonw.exe"" "".\scheduler\daily_runner.py"" ON_BOOT", 0, False
